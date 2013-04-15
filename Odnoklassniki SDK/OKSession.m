@@ -72,9 +72,25 @@ static OKSession *_activeSession = nil;
 	return result;
 }
 
+- (void)contunueLoginWithCode:(NSString *)code {
+    NSMutableDictionary *newParams = [NSMutableDictionary dictionary];
+    [newParams setValue:code forKey:@"code"];
+    [newParams setValue:[self.permissions componentsJoinedByString:@","] forKey:@"permissions"];
+    [newParams setValue:self.getAppBaseUrl forKey:@"redirect_uri"];
+    [newParams setValue:@"authorization_code" forKey:@"grant_type"];
+    [newParams setValue:self.appId forKey:@"client_id"];
+    [newParams setValue:self.appSecret forKey:@"client_secret"];
+    
+    self.tokenRequest = [[[OKRequest alloc] init] autorelease];
+    _tokenRequest.url = [OKRequest serializeURL:kAccessTokenURL params:newParams httpMethod:@"POST"];
+    _tokenRequest.delegate = self;
+    _tokenRequest.params = newParams;
+    _tokenRequest.httpMethod = @"POST";
+    [self.tokenRequest load];
+}
+
 - (BOOL)handleOpenURL:(NSURL *)url {
 	if (![[url absoluteString] hasPrefix:self.getAppBaseUrl]) {
-		NSLog(@"wrong prefix = %@, %@", [url absoluteString], self.getAppBaseUrl);
 		return NO;
 	}
 
@@ -90,22 +106,17 @@ static OKSession *_activeSession = nil;
 
 	NSString *code = [params objectForKey:@"code"];
 
-	NSMutableDictionary *newParams = [NSMutableDictionary dictionary];
-	[newParams setValue:code forKey:@"code"];
-	[newParams setValue:[self.permissions componentsJoinedByString:@","] forKey:@"permissions"];
-	[newParams setValue:self.getAppBaseUrl forKey:@"redirect_uri"];
-	[newParams setValue:@"authorization_code" forKey:@"grant_type"];
-	[newParams setValue:self.appId forKey:@"client_id"];
-	[newParams setValue:self.appSecret forKey:@"client_secret"];
-
-	self.tokenRequest = [[[OKRequest alloc] init] autorelease];
-	_tokenRequest.url = [OKRequest serializeURL:kAccessTokenURL params:newParams httpMethod:@"POST"];
-	_tokenRequest.delegate = self;
-	_tokenRequest.params = newParams;
-	_tokenRequest.httpMethod = @"POST";
-	[self.tokenRequest load];
-
-	return YES;
+    if ([_delegate respondsToSelector:@selector(okShouldContinueLoginWithCode:)]) {
+        if ([_delegate okShouldContinueLoginWithCode:code]) {
+            [self contunueLoginWithCode:code];
+        } else {
+            
+        }
+    } else {
+        [self contunueLoginWithCode:code];
+    }
+    
+    return YES;
 }
 
 - (void)close {
@@ -123,7 +134,7 @@ static OKSession *_activeSession = nil;
 
 		NSDictionary *cachedToken = [[OKTokenCache sharedCache] getTokenInformation];
 		if(cachedToken){
-			self.accessToken = [cachedToken valueForKey:kAccessTokenKey];
+			self.accessToken = [cachedToken valueForKey:[OKTokenCache kAccessTokenKey]];
 			self.refreshToken = [NSString stringWithFormat:@"%@", [cachedToken valueForKey:kRefreshTokenKey]];
 			NSArray *aPermissions = [cachedToken valueForKey:kPermissionsKey];
 
@@ -220,7 +231,7 @@ static OKSession *_activeSession = nil;
 			return;
 		}
 		[self cacheTokenCahceWithPermissions:result];
-		self.accessToken = [(NSDictionary *)result valueForKey:kAccessTokenKey];
+		self.accessToken = [(NSDictionary *)result valueForKey:[OKTokenCache kAccessTokenKey]];
 		self.refreshToken = [(NSDictionary *)result valueForKey:kRefreshTokenKey];
 
 		if (_delegate && [_delegate respondsToSelector:@selector(okDidLogin)])
@@ -233,8 +244,8 @@ static OKSession *_activeSession = nil;
 		}
 
 		NSMutableDictionary *dct = [NSMutableDictionary dictionaryWithDictionary:[[OKTokenCache sharedCache] getTokenInformation]];
-		self.accessToken = [(NSDictionary *)result valueForKey:kAccessTokenKey];
-		[dct setValue:self.accessToken forKey:kAccessTokenKey];
+		self.accessToken = [(NSDictionary *)result valueForKey:[OKTokenCache kAccessTokenKey]];
+		[dct setValue:self.accessToken forKey:[OKTokenCache kAccessTokenKey]];
 		[self cacheTokenCahceWithPermissions:dct];
 		if (_delegate && [_delegate respondsToSelector:@selector(okDidExtendToken:)])
 			[_delegate okDidExtendToken:self.accessToken];

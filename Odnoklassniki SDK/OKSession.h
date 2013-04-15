@@ -21,6 +21,7 @@ extern NSString* const kAPIBaseURL;
 -(void)okDidExtendToken:(NSString *)accessToken;
 -(void)okDidNotExtendToken:(NSError *)error;
 -(void)okDidLogout;
+-(BOOL)okShouldContinueLoginWithCode:(NSString *)code;
 @end
 
 @interface OKSession : NSObject<OKRequestDelegate>{

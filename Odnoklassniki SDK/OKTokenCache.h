@@ -6,13 +6,14 @@
 
 #import <Foundation/Foundation.h>
 
-extern NSString *const kAccessTokenKey;
 extern NSString *const kRefreshTokenKey;
 extern NSString *const kPermissionsKey;
 
 @interface OKTokenCache : NSObject
 
 +(OKTokenCache *)sharedCache;
+
++(NSString *)kAccessTokenKey;
 
 -(void)cacheTokenInformation:(NSDictionary *)tokenInfo;
 -(NSDictionary*)getTokenInformation;

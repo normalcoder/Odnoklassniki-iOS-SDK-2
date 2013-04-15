@@ -9,7 +9,7 @@
 
 static NSString *const OKTokenKey = @"ru.odnoklassniki.sdk:TokenKey";
 
-NSString *const kAccessTokenKey = @"access_token";
+static NSString *const kAccessTokenKey = @"access_token";
 NSString *const kRefreshTokenKey = @"refresh_token";
 NSString *const kPermissionsKey = @"permissions";
 
@@ -25,6 +25,10 @@ static OKTokenCache *sharedInstance;
 		}
 	}
 	return sharedInstance;
+}
+
++(NSString *)kAccessTokenKey {
+    return kAccessTokenKey;
 }
 
 -(void)cacheTokenInformation:(NSDictionary *)tokenInfo {
